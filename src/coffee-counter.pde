@@ -12,7 +12,7 @@
  * Parallax. It uses the UART on port 0 for
  * recieving data and outputs it on port 1.
  *
- * @copyright 2009 - hairmare@purplehaze.ch - All Rights Reserved
+ * @copyright 2012 Lucas S. Bickel <hairmare@purplehaze.ch> All Rights Reserved
  * @license   GPL
  */
  
@@ -21,14 +21,14 @@ const int PIN_IN_BUTTON = 8;        // button to request a reading
 const int PIN_OUT_RFID_ENABLE = 2;  // ENABLE on the Reader
  
 int readerState = 0;                // initial state of the reader is off
-int oldReaderState = 2;
-int buttonState;
-int lastButtonState = LOW;
+int oldReaderState = 2;             // like when after a reset
+int buttonState;                    // @todo can be removed with minor refactoring
+int lastButtonState = LOW;          // we don't expect a button press on 'boot'
 
-long lastDebounceTime = 0;
-long debounceDelay = 50;
+long lastDebounceTime = 0;          // used for soft-debouncing our input
+long debounceDelay = 50;            // default debounce delay
 
-long readerStartTime = 0;           // for timeing out the reader
+long readerStartTime = 0;           // used for timeing out the reader
 
 char serialBuffer;                  // takes single chars from the reader
 char tagString[] = "0123456789";    // string for tag numbers
@@ -41,10 +41,18 @@ void setup() {
    pinMode(PIN_OUT_RFID_ENABLE, OUTPUT);
    // high deactivates module, pull to low for a reading
    digitalWrite(PIN_OUT_RFID_ENABLE, HIGH); 
-   
-   //Serial.println('reader online');
 }
  
+/**
+ * this main loop implements a state engine
+ * 
+ * haz these states:
+ * 0 : wait for button and debounce
+ * 1 : read from serial UART until full tag is detected
+ * 2 : clean up and turn off rfid reader
+ *
+ * @todo consider refactoring most transitions into states (see in code comments)
+ */
 void loop() {
   int reading;
    // initially the reader waits for a button press
@@ -57,6 +65,7 @@ void loop() {
      if ((millis() - lastDebounceTime) > debounceDelay){
        buttonState = reading;
        if (buttonState == 1) {
+         // @todo refactor this into readerState = 3 (it introduces more state than needed to GTJD)
          readerState = 1;
          if (readerState != oldReaderState) {
            Serial.println("                ");
@@ -71,6 +80,7 @@ void loop() {
      if (readerStartTime == 0) {
        readerStartTime = millis();
      }
+     // @todo let this have its own state so is is only done when needed
      digitalWrite(PIN_OUT_RFID_ENABLE, LOW);
      if (Serial.available() > 0) {
        serialBuffer = Serial.read();
@@ -83,13 +93,11 @@ void loop() {
        } else {
          tagString[tagIndex++] = serialBuffer;
        }
-       
-         
-       //Serial.print(Serial.read());
      }
-     // timeout reader after some time
+     // timeout reader after some time, also possible millis overflow :|
+     // @todo does this need to be configurable?
      if ((millis() - readerStartTime) > 1000) {
-      readerState = 2;
+       readerState = 2;
      } 
    }
    // clean up 
