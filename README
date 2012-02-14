@@ -1,0 +1,28 @@
+Coffee Counter
+**************
+
+We want to replace our existing coffee machine tally sheet with some beautifully over-engineered DIY hard and software.
+
+What we already have:
+
+- PoC RFID Reader code
+- RFID Reader
+- 10 Transponders (more are 1.20 CHF each at zerko.ch)
+- Serial Display (users gots to know)
+- Distance Sensor (for RFID Reader activation purposes)
+- Arduino
+- Protoboard
+
+What we need:
+
+- SD Card interface (networkless setup & storage)
+- project box (meethinks transparent)
+- audio output module (.... yeah)
+
+Things to take in account:
+
+- networkless -> sdcard sneakernetting
+- how do we power the setup (accu vs. wall wart or even poe)
+- autoprovisioning w/o name in display until next sneakersync
+- keep redundant data ie. log to sdcard + counter for display
+- physical undo button for erroneous tag reads
